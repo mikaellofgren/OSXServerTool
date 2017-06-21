@@ -1,5 +1,7 @@
 #!/bin/sh
 # OSXServerTool
+# 2017-06-21 Clean up and added Destroy LDAP sererver
+#
 
 # Root or not
 if [ "$(id -u)" != "0" ]; then
@@ -8,19 +10,19 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-systemversion='sw_vers -productVersion'
+SYSTEMVERSION=$(sw_vers -productVersion)
 
 
-function gethostname() {
+GETHOSTNAME () {
 echo "Your current hostname is:"
 scutil --get HostName
 }
 
-function sethostname() {
+SETHOSTNAME () {
 echo "To return to menu, press Enter/Return key."
 echo "What hostname do you want to use to use? Your current hostname is:"
 scutil --get HostName
-read input
+read -r input
 if  [ "$input" = "" ]; then
 echo "No input returns to Menu"
 else
@@ -30,61 +32,61 @@ scutil --get HostName
 fi
 }
 
-function checkhostname() {
+CHECKHOSTNAME () {
 osascript -e 'tell application "Terminal" to do script "sudo changeip -checkhostname"'
 }
  
-function flushdns() {
-if [[ "$systemversion" == "10.10.*" ]]; then
+FLUSHDNS () {
+if [ "$SYSTEMVERSION" = "10.10.*" ]; then
 discoveryutil udnsflushcaches; dscacheutil -flushcache;
-elif [[ "$systemversion" == "10.9.*" ]]; then
+elif [ "$SYSTEMVERSION" = "10.9.*" ]; then
 dscacheutil -flushcache; killall -HUP mDNSResponder
-elif [[ "$systemversion" == "10.8.*" ]]; then
+elif [ "$SYSTEMVERSION" = "10.8.*" ]; then
 killall -HUP mDNSResponder
-elif [[ "$systemversion" == "10.7.*" ]]; then
+elif [ "$SYSTEMVERSION" = "10.7.*" ]; then
 killall -HUP mDNSResponder
 fi
 echo "DNS flushed..."
 }
 
 
-function slapconfigman() {
+SLAPCONFIGMAN () {
 osascript -e 'tell application "Terminal" to do script "man slapconfig"'
 }
 
 
-function odstyle() {
+ODSTYLE () {
 echo "OD style is:"
 /usr/sbin/slapconfig -getstyle
 }
 
-function dirservSettings() {
+DIRSERVSETTINGS () {
 echo "Directory server settings is:"
 serveradmin settings dirserv
 }
 
-function getmasterconfig() {
+GETMASTERCONFIG () {
 echo "Master config status:"
 /usr/sbin/slapconfig -getmasterconfig 
 }
 
 
-function getreplicaconfig() {
+GETREPLICACONFIG () {
 echo "Replica config status:"
 /usr/sbin/slapconfig -getreplicaconfig 
 }
 
-function updateaddresses() {
+UPDATEADDRESSES () {
 echo "Updates the LDAP replica interface list from the password server's list:"
 /usr/sbin/slapconfig -updateaddresses 
 }
 
-function preflightreplica() {
+PREFLIGHTREPLICA () {
 echo "To return to menu, press Enter/Return key."
 echo "What ipaddress has Master server:"
-read master
+read -r master
 echo "What username has diradmin?:"
-read username
+read -r username
 if  [ "$master" = "" ]; then
 echo "No input returns to Menu"
 elif [ "$username" = "" ]; then
@@ -94,17 +96,17 @@ else
 fi
 }
 
-function testslapdconfigfile() {
+TESTSLAPDCONFIGFILE () {
 /usr/libexec/slapd -Tt
 }
 
-function exportUsers() {
+EXPORTUSERS () {
 echo "Users exported to /Users/Shared/"
 open . /Users/Shared/
 dsexport /Users/Shared/exportedUserRecords.out /LDAPv3/127.0.0.1 dsRecTypeStandard:Users
 }
 
-function exportGroups() {
+EXPORTGROUPS () {
 echo "Groups exported to /Users/Shared/"
 open . /Users/Shared/
 dsexport /Users/Shared/exportedGroupRecords.out /LDAPv3/127.0.0.1 dsRecTypeStandard:Groups
@@ -112,19 +114,33 @@ dsexport /Users/Shared/exportedGroupRecords.out /LDAPv3/127.0.0.1 dsRecTypeStand
 
 
 
-function unloadOpenldapSlapd() {
+UNLOADOPENLDAPSLAPD () {
 echo "Openldap unloaded-Stopped"
 sudo launchctl unload /System/Library/LaunchDaemons/org.openldap.slapd.plist
 }
 
-function loadOpenldapSlapd() {
+LOADOPENLDAPSLAPD () {
 echo "Openldap loaded-Started"
 sudo launchctl load /System/Library/LaunchDaemons/org.openldap.slapd.plist
 }
 
-function db_recover() {
+DB_RECOVER () {
 echo "Trying db-recover from /var/db/openldap/authdata/"
 sudo db_recover -h /var/db/openldap/authdata/
+}
+
+DESTROYLDAPSERVER () {
+echo "Are you sure that you want to destroy Ldapserver, type YES or NO"
+read -r input
+if  [ "$input" = "" ]; then
+echo "No input returns to Menu"
+elif [ "$input" = "NO" ]; then
+echo "NO, returns to Menu"
+elif [ "$input" = "YES" ]; then
+echo "Destroying Ldapserver"
+/usr/sbin/slapconfig -destroyldapserver
+fi
+
 }
 
 selection=
@@ -147,35 +163,34 @@ until [ "$selection" = "0" ]; do
 	echo "\033[1mOpen Directory Export Users and Groups\033[0m"
 	echo "13 - Export OD users"
 	echo "14 - Export OD groups"
-	echo "\033[1mOpen Directory Start-Stop and Recover. Use with caution!\033[0m"
+	echo "\033[1mOpen Directory Start-Stop and Recover/Destroy. Use with caution!\033[0m"
 	echo "15 - Stop-Unload Openldap"
-	echo "16 - Start-load Openldap"
+	echo "16 - Start-Load Openldap"
 	echo "17 - DB_recover Openldap"
-	
-	
-	
-	echo "18 - Exit"
-    read selection
+	echo "18 - Destroy Ldapserver"
+	echo "19 - Exit"
+    read -r selection
     echo ""
     case $selection in
-        1 ) gethostname;;
-        2 ) sethostname;;
-        3 ) checkhostname ;;
-        4 ) flushdns ;;
-        5 )  slapconfigman ;;
-		6 ) odstyle ;;
-		7 )  dirservSettings ;;
-		8 )  getmasterconfig ;;
-		9 ) getreplicaconfig  ;;
-		10 ) preflightreplica ;;
-		11 ) testslapdconfigfile  ;;
-        12 ) updateaddresses ;;
-        13 ) exportUsers ;;
-        14 ) exportGroups ;;
-        15 ) unloadOpenldapSlapd ;;
-        16 ) loadOpenldapSlapd ;;
-        17 ) db_recover ;;
-         18 ) exit ;;
+        1 ) GETHOSTNAME;;
+        2 ) SETHOSTNAME;;
+        3 ) CHECKHOSTNAME;;
+        4 ) FLUSHDNS;;
+        5 ) SLAPCONFIGMAN;;
+		6 ) ODSTYLE;;
+		7 ) DIRSERVSETTINGS;;
+		8 ) GETMASTERCONFIG;;
+		9 ) GETREPLICACONFIG;;
+		10 ) PREFLIGHTREPLICA;;
+		11 ) TESTSLAPDCONFIGFILE;;
+        12 ) UPDATEADDRESSES;;
+        13 ) EXPORTUSERS;;
+        14 ) EXPORTGROUPS;;
+        15 ) UNLOADOPENLDAPSLAPD;;
+        16 ) LOADOPENLDAPSLAPD;;
+        17 ) DB_RECOVER;;
+         18 ) DESTROYLDAPSERVER;;
+         19 ) exit ;;
     esac
 done 
 
