@@ -22,7 +22,8 @@ Choose what you wanna do from this list:<br>
 15 - Stop-Unload Openldap<br>
 16 - Start-load Openldap<br>
 17 - DB_recover Openldap<br>
-18 - Exit<br>
+18 - Destroy Ldapserver<br>
+19 - Exit<br>
 
 <br>Use it at your own risk. I take no responsibility what this commands can do.<br>
 
