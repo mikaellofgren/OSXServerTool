@@ -12,7 +12,6 @@ fi
 
 SYSTEMVERSION=$(sw_vers -productVersion)
 
-
 GETHOSTNAME () {
 echo "Your current hostname is:"
 scutil --get HostName
@@ -49,11 +48,9 @@ fi
 echo "DNS flushed..."
 }
 
-
 SLAPCONFIGMAN () {
 osascript -e 'tell application "Terminal" to do script "man slapconfig"'
 }
-
 
 ODSTYLE () {
 echo "OD style is:"
@@ -69,7 +66,6 @@ GETMASTERCONFIG () {
 echo "Master config status:"
 /usr/sbin/slapconfig -getmasterconfig 
 }
-
 
 GETREPLICACONFIG () {
 echo "Replica config status:"
@@ -111,7 +107,6 @@ echo "Groups exported to /Users/Shared/"
 open . /Users/Shared/
 dsexport /Users/Shared/exportedGroupRecords.out /LDAPv3/127.0.0.1 dsRecTypeStandard:Groups
 }
-
 
 
 UNLOADOPENLDAPSLAPD () {
